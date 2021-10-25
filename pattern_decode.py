@@ -97,6 +97,7 @@ def convert_pattern(pattern_image, binary):
         pattern1 = np.vectorize(b2g_proc)(pattern_image[:,:,1], binaryToGray)
     else:
         pattern0 = np.vectorize(g2b_proc)(pattern_image[:,:,0], grayToBinary, projector_size.width)
+
         pattern1 = np.vectorize(g2b_proc)(pattern_image[:,:,1], grayToBinary, projector_size.height)
     pattern_out = np.dstack((pattern0, pattern1))
     return pattern_out
