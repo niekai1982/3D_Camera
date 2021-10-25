@@ -102,10 +102,15 @@ def convert_pattern(pattern_image, binary):
     pattern_out = np.dstack((pattern0, pattern1))
     return pattern_out
 
-def decode_pattern(images, flag, direct_light, m):
+def decode_pattern(pattern_image_list, flag, direct_light, m):
 
     binary = (flag & GrayPatternDecode)!=GrayPatternDecode
     robust = (flag & RobustDecode) == RobustDecode
+
+    images = []
+    for idx in range(len(pattern_image_list)):
+        images.append(cv2.imread(pattern_image_list[idx]))
+    images = np.array(images)
 
     print("--- decode_pattern START ---")
     init = True
@@ -140,9 +145,37 @@ def decode_pattern(images, flag, direct_light, m):
         channel = set_idx - 1
         gray_image1 = images[t+0]
         gray_image2 = images[t+1]
+
         if init:
+            if robust and gray_image1.shape[0] != direct_light.shape[0]:
+                print("--> Direct Componect image has different size: ")
+                return False
             pattern_image = np.empty((gray_image1.shape[0], gray_image1.shape[1], 2), dtype=np.float32)
             min_max_image = np.empty((gray_image1.shape[0], gray_image1.shape[1], 2), dtype=np.uint8)
+        if init:
+            pattern_image[:,:,:] = 0.
+
+        def get_min(init, value1, value2, min):
+            if init or value1 < min or value2 < min:
+                res = value1 if value1 < value2 else value2
+            else:
+                res = min
+            return res
+
+        def get_max(init, value1, value2, max):
+            if init or value1 > max or value2 > max:
+                res = value1 if value1 > value2 else value2
+            else:
+                res = max
+            return res
+
+        min_max_image[:,:,0] = np.vectorize
+
+        if  not robust:
+            pattern_image[:,:,channel][np.where(gray_image1>gray_image2)] += (1<<bit)
+
+
+
         current += 1
 
 
@@ -161,7 +194,7 @@ def decode():
 
 
 if __name__ == "__main__":
-    pattern_file_list = glob.glob('../data/cartman/2013-May-14_20.41.56.117/*.png')
+    pattern_file_list = glob.glob('../3d_camera_calib_data/cartman/2013-May-14_20.41.56.117/*.png')
     pattern_file_list.sort()
     count = len(pattern_file_list)
 
