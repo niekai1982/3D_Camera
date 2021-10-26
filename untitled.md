@@ -101,4 +101,32 @@ bit: 0
 set_idx 2
 channel 1
 
+#### decode_pattern
+
+- total_image
+- total_patterns
+- total_bits
+
+##### get pair_wise gray_image(code and ! code)
+> channel: 0, 1 col code and row code
+> set: 1, 2 code or !code
+> PIXEL_UNCERTAIN NaN
+
+- define pattern image
+- define min_max_image
+- pixel_wise operation
+  - value1 = gray_image1[i,j], value2 = gray_image[i,j]
+  - min_max_image
+    - min_max[0](min_value) = min(value1, value2)
+    - min_max[1](max_value) = max(value1, value2)
+  - use robust or not
+    - not 
+      - value1 > value2, pattern[channel] += 1 <<bit
+    - use robust
+      - L = row_light, L[0] = Ld(direct_light), L[1] = Lg(glob_light)
+      - p = get_robust_bit(value1, value2, L[0], L[1], m)
+        - get_robust_bit
+          - Ld < m BIT_UNVERTAIN, 
+          - Ld > Lg value1 > value2 ?1 :0
+- 
 

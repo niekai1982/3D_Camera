@@ -10,7 +10,8 @@ class cvSize(object):
         self.height = h
 
 
-BIT_UNCERTAIN = 65535
+BIT_UNCERTAIN = 0xffff
+PIXEL_UNCERTAIN = np.nan
 gray_offset = (0, 128)
 projector_size = cvSize(1024, 768)
 RobustDecode = 0x01
@@ -92,13 +93,14 @@ def convert_pattern(pattern_image, binary):
             code = threshold - 1
         res = code + pattern - p
         return res
+
     if binary:
         pattern0 = np.vectorize(b2g_proc)(pattern_image[:,:,0], binaryToGray)
         pattern1 = np.vectorize(b2g_proc)(pattern_image[:,:,1], binaryToGray)
     else:
         pattern0 = np.vectorize(g2b_proc)(pattern_image[:,:,0], grayToBinary, projector_size.width)
-
         pattern1 = np.vectorize(g2b_proc)(pattern_image[:,:,1], grayToBinary, projector_size.height)
+
     pattern_out = np.dstack((pattern0, pattern1))
     return pattern_out
 
@@ -107,18 +109,32 @@ def decode_pattern(pattern_image_list, flag, direct_light, m):
     binary = (flag & GrayPatternDecode)!=GrayPatternDecode
     robust = (flag & RobustDecode) == RobustDecode
 
+    # inline function
+    def get_min(init, value1, value2, min):
+        if init or value1 < min or value2 < min:
+            res = value1 if value1 < value2 else value2
+        else:
+            res = min
+        return res
+
+    def get_max(init, value1, value2, max):
+        if init or value1 > max or value2 > max:
+            res = value1 if value1 > value2 else value2
+        else:
+            res = max
+        return res
+
     images = []
     for idx in range(len(pattern_image_list)):
-        images.append(cv2.imread(pattern_image_list[idx]))
+        images.append(cv2.imread(pattern_image_list[idx], 0))
     images = np.array(images)
 
     print("--- decode_pattern START ---")
     init = True
 
     total_images = images.shape[0]
-    total_patterns = total_images/2 - 1
-    total_bits = total_patterns/2
-
+    total_patterns = int(total_images/2 - 1)
+    total_bits = int(total_patterns/2)
 
     if (2+4*total_bits) != total_images:
         print("ERROR: cannot detect pattern and bit count from image set.")
@@ -127,14 +143,13 @@ def decode_pattern(pattern_image_list, flag, direct_light, m):
     set_size = (1, total_bits, total_bits)
     COUNT = 2*(set_size[0]+set_size[1]+set_size[2])
     pattern_offset = (
-        ((1 << total_bits)-projector_size[1])/2, ((1 << total_bits)-projector_size[0])/2)
+        ((1 << total_bits)-projector_size.width)/2, ((1 << total_bits)-projector_size.height)/2)
     if images.shape[0] < COUNT:
         print("Image list size does not match set size")
         return False
     set_idx = 0
     current = 0
     for t in range(0, COUNT, 2):
-        current += 1
         if current == set_size[set_idx]:
             set_idx += 1
             current = 0
@@ -147,7 +162,7 @@ def decode_pattern(pattern_image_list, flag, direct_light, m):
         gray_image2 = images[t+1]
 
         if init:
-            if robust and gray_image1.shape[0] != direct_light.shape[0]:
+            if robust and gray_image1.shape[0] != direct_light.shape[1]:
                 print("--> Direct Componect image has different size: ")
                 return False
             pattern_image = np.empty((gray_image1.shape[0], gray_image1.shape[1], 2), dtype=np.float32)
@@ -155,28 +170,31 @@ def decode_pattern(pattern_image_list, flag, direct_light, m):
         if init:
             pattern_image[:,:,:] = 0.
 
-        def get_min(init, value1, value2, min):
-            if init or value1 < min or value2 < min:
-                res = value1 if value1 < value2 else value2
-            else:
-                res = min
-            return res
+        # def robust_pro(init, row_light, pattern):
+        #     if row_light and (init or pattern != PIXEL_UNCERTAIN):
 
-        def get_max(init, value1, value2, max):
-            if init or value1 > max or value2 > max:
-                res = value1 if value1 > value2 else value2
-            else:
-                res = max
-            return res
-
-        min_max_image[:,:,0] = np.vectorize
+        min_max_image[:,:,0] = np.vectorize(get_min)(init, gray_image1, gray_image2, min_max_image[:,:,0])
+        min_max_image[:,:,1] = np.vectorize(get_max)(init, gray_image1, gray_image2, min_max_image[:,:,1])
 
         if  not robust:
             pattern_image[:,:,channel][np.where(gray_image1>gray_image2)] += (1<<bit)
+        else:
+            p = np.vectorize(get_robust_bit)(gray_image1, gray_image2, direct_light[0], direct_light[1], m)
+            def p2pattern(p, pattern):
+                if p == BIT_UNCERTAIN:
+                    return PIXEL_UNCERTAIN
+                else:
+                    return pattern + (int(p) << bit)
+            pattern_image[:,:,channel] = np.vectorize(p2pattern)(p, pattern_image[:,:,channel])
 
-
-
+        init = False
         current += 1
+    if not binary:
+        pattern_image = convert_pattern(pattern_image, binary)
+
+
+    print("--- decode_pattern END ---")
+    return pattern_image, min_max_image
 
 
 def decode_gray_set(pattern_image_list):
@@ -186,20 +204,28 @@ def decode_gray_set(pattern_image_list):
         images.append(cv2.imread(pattern_image_list[idx-1], 0))
     images = np.array(images)
     direct_light = estimate_direct_light(images, b=0.5)
-    decode_pattern(pattern_image_list, RobustDecode | GrayPatternDecode, direct_light, DEFAULT_M)
-    return direct_light
+    print(direct_light.shape)
+
+    plt.imshow(direct_light[0])
+    plt.show()
+    plt.imshow(direct_light[1])
+    plt.show()
+
+    pattern_image, min_max_image = decode_pattern(pattern_image_list, RobustDecode | GrayPatternDecode, direct_light, DEFAULT_M)
+    plt.imshow(pattern_image[:,:,0])
+    plt.show()
+    plt.imshow(pattern_image[:,:,1])
+    plt.show()
+
+    return pattern_image, min_max_image
 
 def decode():
     pass
 
 
 if __name__ == "__main__":
-    pattern_file_list = glob.glob('../3d_camera_calib_data/cartman/2013-May-14_20.41.56.117/*.png')
+    pattern_file_list = glob.glob('../data/cartman/2013-May-14_20.41.56.117/*.png')
     pattern_file_list.sort()
     count = len(pattern_file_list)
-
-    out = decode_gray_set(pattern_file_list)
-    print(out.shape)
-    plt.imshow(out[1])
-    plt.show()
+    pattern_image, min_max_image = decode_gray_set(pattern_file_list)
 
