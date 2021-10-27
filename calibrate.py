@@ -120,6 +120,8 @@ def calibrate(pattern_set):
                         image_points.append([w, h])
                         proj_points.append([pattern[0], pattern[1]])
             H = cv2.findHomography(image_points, proj_points)
+            print(H)
+
 
 
 
@@ -129,5 +131,5 @@ if __name__ == "__main__":
     pattern_file_list.sort()
     pattern_set = [pattern_file_list]
 
-    extract_chessboard_corners(pattern_set)
+    calibrate(pattern_set)
 
