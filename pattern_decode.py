@@ -2,7 +2,10 @@ import cv2
 import numpy as np
 import os
 import glob
+import matplotlib as mpl
+mpl.use('tkagg')
 import matplotlib.pyplot as plt
+
 
 class cvSize(object):
     def __init__(self, w, h):
@@ -81,17 +84,23 @@ def convert_pattern(pattern_image, binary):
         print("Converting gray code to binary")
 
     def b2g_proc(pattern, function):
-        p = int(pattern)
-        res = function(p, 0) + pattern - p
+        if not np.isnan(pattern):
+            p = int(pattern)
+            res = function(p, 0) + pattern - p
+        else:
+            res = pattern
         return res
     def g2b_proc(pattern, function, threshold):
-        p = int(pattern)
-        code = function(p, 0)
-        if code < 0:
-            code = 0
-        elif code >= threshold:
-            code = threshold - 1
-        res = code + pattern - p
+        if not np.isnan(pattern):
+            p = int(pattern)
+            code = function(p, 0)
+            if code < 0:
+                code = 0
+            elif code >= threshold:
+                code = threshold - 1
+            res = code + pattern - p
+        else:
+            res = pattern
         return res
 
     if binary:
@@ -198,25 +207,14 @@ def decode_pattern(pattern_image_list, flag, direct_light, m):
 
 
 def decode_gray_set(pattern_image_list):
-    direct_component_images = [15, 16, 17, 18, 35, 36, 37, 38]
+    # direct_component_images = [15, 16, 17, 18, 35, 36, 37, 38]
+    direct_component_images = [15, 16, 17, 18, 30, 31, 32, 33]
     images = []
     for idx in direct_component_images:
         images.append(cv2.imread(pattern_image_list[idx-1], 0))
     images = np.array(images)
     direct_light = estimate_direct_light(images, b=0.5)
-    print(direct_light.shape)
-
-    plt.imshow(direct_light[0])
-    plt.show()
-    plt.imshow(direct_light[1])
-    plt.show()
-
     pattern_image, min_max_image = decode_pattern(pattern_image_list, RobustDecode | GrayPatternDecode, direct_light, DEFAULT_M)
-    plt.imshow(pattern_image[:,:,0])
-    plt.show()
-    plt.imshow(pattern_image[:,:,1])
-    plt.show()
-
     return pattern_image, min_max_image
 
 def decode():
@@ -224,8 +222,12 @@ def decode():
 
 
 if __name__ == "__main__":
-    pattern_file_list = glob.glob('../data/cartman/2013-May-14_20.41.56.117/*.png')
+    # pattern_file_list = glob.glob('../data/cartman/2013-May-14_20.41.56.117/*.png')
+    pattern_file_list = glob.glob('../data/lab/20211027_1/*.jpg')
     pattern_file_list.sort()
     count = len(pattern_file_list)
     pattern_image, min_max_image = decode_gray_set(pattern_file_list)
+    plt.imshow(pattern_image[:,:,0])
+    plt.show()
+
 
