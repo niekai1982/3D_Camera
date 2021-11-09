@@ -1,5 +1,8 @@
 ## decode pattern
-
+test
+test
+test
+test
 ```c++
 row_light[w][0] = (Lg>0?static_cast<usigned>(Ld):Lmax)
 ```

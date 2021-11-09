@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="80cf852e-81b5-4df4-addf-82e439fe7f69" name="10.133.229.111">
+        <fileTransfer rootFolder="/home/work/scan_calib_3d_camera" accessType="SFTP" host="10.133.229.111" port="2222" sshConfigId="bebd9315-3c2c-4be7-b755-32488371bdda" sshConfig="work@10.133.229.111:2222 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

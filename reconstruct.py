@@ -4,45 +4,45 @@ import os
 import glob
 import matplotlib as mpl
 from calibrate import CalibrationData
-import open3d as o3d
+# import open3d as o3d
 
-mpl.use("tkagg")
+# mpl.use("tkagg")
 import matplotlib.pyplot as plt
 from pattern_decode import decode_gray_set
 from cv2python import *
 
 THRESHOLD_DEFAULT = 25
-MAX_DIST_DEFAULT = 200.
-projector_size = cvSize(1024, 768)
+MAX_DIST_DEFAULT = 100.
+projector_size = cvSize(1600, 1200)
 
 calib = CalibrationData()
-calib.cam_K = np.array([[4.61328655e+03, 0.00000000e+00, 1.51430588e+03],
-                        [0.00000000e+00, 4.61431355e+03, 9.58511402e+02],
+calib.cam_K = np.array([[4.55870035e+03, 0.00000000e+00, 1.51017862e+03],
+                        [0.00000000e+00, 4.55911080e+03, 9.88716486e+02],
                         [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
 
-calib.cam_kc = np.array([[-3.15774172e-01],
-                         [7.43419804e+00],
-                         [1.10989491e-04],
-                         [2.70686467e-03],
-                         [-1.49257829e+02]], dtype=np.float32)
+calib.cam_kc = np.array([[-1.95063253e-01],
+                         [1.93858801e+00],
+                         [-4.99197011e-04],
+                         [1.35514749e-03],
+                         [-1.55614418e+01]], dtype=np.float32)
 
-calib.proj_K = np.array([[9.75347408e+03, 0.00000000e+00, 8.15917991e+02],
-                         [0.00000000e+00, 8.17254547e+03, 6.02064366e+02],
+calib.proj_K = np.array([[3.90467278e+03, 0.00000000e+00, 8.02215392e+02],
+                         [0.00000000e+00, 3.90997537e+03, 6.01700509e+02],
                          [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
 
-calib.proj_kc = np.array([[-4.77003120e+00],
-                          [-3.17738270e+03],
-                          [-1.21848331e-01],
-                          [4.08082144e-02],
-                          [-6.39263719e+00]], dtype=np.float32)
+calib.proj_kc = np.array([[-4.78490045e-01],
+                          [3.86902030e+01],
+                          [-8.60596372e-02],
+                          [1.31578421e-02],
+                          [-6.33953261e+02]], dtype=np.float32)
 
-calib.R = np.array([[0.97256075, -0.08113361, 0.21804341],
-                    [0.04049214, 0.98194728, 0.18476993],
-                    [-0.22909819, -0.17087094, 0.95828865]], dtype=np.float32)
+calib.R = np.array([[0.93488111, -0.06929929, 0.34813061],
+                    [-0.02243265, 0.9672622, 0.25278571],
+                    [-0.35425145, -0.24413408, 0.90272059]], dtype=np.float32)
 
-calib.T = np.array([[-219.19568903],
-                    [-185.52863341],
-                    [1953.00632961]], dtype=np.float32)
+calib.T = np.array([[-319.41056464],
+                    [-230.99720084],
+                    [525.08697085]], dtype=np.float32)
 calib.is_valid = True
 
 
@@ -110,8 +110,8 @@ def approximate_ray_intersection(v1, q1, v2, q2, distance, out_lambda1=0, out_la
 
 def reconstruct_model_simple(pattern_list):
     # pattern_image, min_max_image = decode_gray_set(pattern_list)
-    pattern_image = np.load('./Nikon_1_pattern_image.npy')
-    min_max_image = np.load('./Nikon_1_min_max_image.npy')
+    pattern_image = np.load('./Nikon_test1_pattern_image.npy')
+    min_max_image = np.load('./Nikon_test1_min_max_image.npy')
     color_image = cv2.imread(pattern_list[0])
     threshold = THRESHOLD_DEFAULT
     max_dist = MAX_DIST_DEFAULT
@@ -161,16 +161,16 @@ def reconstruct_model_simple(pattern_list):
 
 if __name__ == '__main__':
     # pattern_file_list = glob.glob('../cartman/2013-May-14_20.41.56.117/*.png')
-    pattern_file_list = glob.glob('../data/Nikon/1/*.JPG')
+    pattern_file_list = glob.glob('../data/Nikon/test1/*.JPG')
     pattern_file_list.sort()
     count = len(pattern_file_list)
     out = reconstruct_model_simple(pattern_file_list)
-    np.save('./2013-May-14_20.41.56117_reconstruct.npy', out)
-    xyz = np.zeros((out.shape[0] * out.shape[1], 3), dtype=np.float32)
+    np.save('./test_out.npy', out)
+    # xyz = np.zeros((out.shape[0] * out.shape[1], 3), dtype=np.float32)
 
-    xyz[:, 0] = out[:, :, 1].flatten()
-    xyz[:, 1] = out[:, :, 0].flatten()
-    xyz[:, 2] = out[:, :, 2].flatten()
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(xyz)
-    o3d.io.write_point_cloud("./sync.ply", pcd)
+    # xyz[:, 0] = out[:, :, 1].flatten()
+    # xyz[:, 1] = out[:, :, 0].flatten()
+    # xyz[:, 2] = out[:, :, 2].flatten()
+    # pcd = o3d.geometry.PointCloud()
+    # pcd.points = o3d.utility.Vector3dVector(xyz)
+    # o3d.io.write_point_cloud("./sync.ply", pcd)

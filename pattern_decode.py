@@ -3,8 +3,11 @@ import numpy as np
 import os
 import glob
 import matplotlib as mpl
+import numba as nb
+from numba import njit
+import time
 
-mpl.use('tkagg')
+# mpl.use('tkagg')
 import matplotlib.pyplot as plt
 
 
@@ -59,11 +62,15 @@ def estimate_direct_light(images, b):
     Lmin = np.min(images, axis=0)
     Ld = b1 * (Lmax - Lmin) + 0.5
     Lg = b2 * (Lmin - b * Lmax) + 0.5
+    # plt.imshow(Lg)
+    # plt.colorbar()
+    # plt.show()
     direct_light[0] = np.where(Lg > 0, Ld, Lmax)
     direct_light[1] = np.where(Lg > 0, Lg, 0)
     return direct_light
 
 
+# @nb.jit(nopython=True)
 def get_robust_bit(value1, value2, Ld, Lg, m):
     if Ld < m:
         return BIT_UNCERTAIN
@@ -79,6 +86,7 @@ def get_robust_bit(value1, value2, Ld, Lg, m):
     return BIT_UNCERTAIN
 
 
+# @nb.jit(nopython=True)
 def convert_pattern(pattern_image, binary):
     if pattern_image.shape[0] == 0:
         return
@@ -121,6 +129,7 @@ def convert_pattern(pattern_image, binary):
     return pattern_out
 
 
+# @nb.jit(nppython=True)
 def decode_pattern(pattern_image_list, flag, direct_light, m):
     binary = (flag & GrayPatternDecode) != GrayPatternDecode
     robust = (flag & RobustDecode) == RobustDecode
@@ -214,6 +223,7 @@ def decode_pattern(pattern_image_list, flag, direct_light, m):
     return pattern_image, min_max_image
 
 
+# @nb.jit(nopython=True)
 def decode_gray_set(pattern_image_list):
     direct_component_images = [15, 16, 17, 18, 35, 36, 37, 38]
     # direct_component_images = [15, 16, 17, 18, 30, 31, 32, 33]
@@ -222,7 +232,11 @@ def decode_gray_set(pattern_image_list):
     for idx in direct_component_images:
         images.append(cv2.imread(pattern_image_list[idx - 1], 0))
     images = np.array(images)
+
+    start = time.time()
     direct_light = estimate_direct_light(images, b=0.5)
+    print("direct light spend time: ", (time.time() - start))
+
     pattern_image, min_max_image = decode_pattern(pattern_image_list, RobustDecode | GrayPatternDecode, direct_light,
                                                   DEFAULT_M)
     return pattern_image, min_max_image
@@ -235,12 +249,17 @@ def decode():
 if __name__ == "__main__":
     # pattern_file_list = glob.glob('../data/cartman/2013-May-14_20.41.56.117/*.png')
     # pattern_file_list = glob.glob('../cartman/2013-May-14_20.41.56.117/*.png')
-    pattern_file_list = glob.glob('../data/Nikon/3/*.JPG')
+    # for i in range(3, 9):
+    pattern_file_list = glob.glob('../data/Nikon/test1/*.JPG')
+    # print(os.getcwd())
+    # print(pattern_file_list)
     pattern_file_list.sort()
     count = len(pattern_file_list)
     pattern_image, min_max_image = decode_gray_set(pattern_file_list)
-    np.save("Nikon_3_pattern_image.npy", pattern_image)
-    np.save("Nikon_3_min_max_image.npy", min_max_image)
+    # np.save("Nikon_" + str(i+1) + "_pattern_image.npy", pattern_image)
+    # np.save("Nikon_" + str(i+1) + "_min_max_image.npy", min_max_image)
+    np.save("Nikon_test1_pattern_image.npy", pattern_image)
+    np.save("Nikon_test1_min_max_image.npy", min_max_image)
     # plt.subplots(221)
     # plt.imshow(pattern_image[:, :, 0])
     # plt.subplots(222)

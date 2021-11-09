@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="work@10.133.229.111:2222" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="10.133.229.111">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/pytool" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="work@10.133.229.111:2222">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/work/scan_calib_3d_camera/pytool" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>

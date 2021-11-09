@@ -1,7 +1,7 @@
 import cv2
 import os
 import matplotlib as mpl
-mpl.use('tkagg')
+# mpl.use('tkagg')
 import numpy as np
 from pattern_decode import decode_gray_set
 import glob
@@ -74,6 +74,8 @@ def extract_chessboard_corners(pattern_set):
             return False
         # ret, corners = cv2.findChessboardCorners(gray_image, (chessboard_size.width, chessboard_size.height), cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_NORMALIZE_IMAGE)
         ret, corners = cv2.findChessboardCorners(gray_image, (chessboard_size.width, chessboard_size.height))
+        plt.imshow(gray_image)
+        plt.show()
         if ret:
             print("find corners num is:", len(corners))
         else:
@@ -116,14 +118,18 @@ def calibrate(pattern_set):
     global pattern_list
     pattern_list = [[] for i in range(count)]
 
+
     for i in range(count):
         corners = chessboard_corners[i]
         pcorners = projector_corners[i]
 
         # pattern_image, min_max_image = decode_gray_set(pattern_set[i])
-        pattern_image = np.load('./Nikon_' + str(i+1)+'_pattern_image.npy')
-        min_max_image = np.load('./Nikon_' + str(i+1)+'_min_max_image.npy')
-        pattern_list[i] = pattern_image
+        if i > 2:
+            pattern_image = np.load('./Nikon_' + str(i+2)+'_pattern_image.npy')
+            min_max_image = np.load('./Nikon_' + str(i+2)+'_min_max_image.npy')
+        else:
+            pattern_image = np.load('./Nikon_' + str(i+1)+'_pattern_image.npy')
+            min_max_image = np.load('./Nikon_' + str(i+1)+'_min_max_image.npy')
 
         if i == 0:
             imageSize.width = pattern_image.shape[1]
@@ -157,7 +163,8 @@ def calibrate(pattern_set):
 
     ### calibration the camera
     criteria = (cv2.TermCriteria_COUNT+cv2.TermCriteria_EPS, 50)
-    cal_flag = cv2.CALIB_FIX_K1 + cv2.CALIB_FIX_K2 + cv2.CALIB_FIX_K3 + cv2.CALIB_FIX_K4 + cv2.CALIB_FIX_K5
+    # cal_flag = cv2.CALIB_FIX_K1 + cv2.CALIB_FIX_K2 + cv2.CALIB_FIX_K3 + cv2.CALIB_FIX_K4 + cv2.CALIB_FIX_K5
+    cal_flag = 0 + cv2.CALIB_FIX_K3
     car_ret, cam_k, cam_kc, cam_rvecs, cam_tvecs = cv2.calibrateCamera(objectPoints, chessboard_corners, (imageSize.width, imageSize.height), cal_flag, criteria)
 
     ### calibrate the projector
@@ -170,19 +177,12 @@ def calibrate(pattern_set):
     return (cam_k, cam_kc, cam_rvecs, cam_tvecs), (proj_k, proj_kc, proj_rvecs, proj_tvecs), (R, T, E, F)
 
 if __name__ == "__main__":
+
     pattern_set = []
-
-    pattern_file_list = glob.glob('../data/Nikon/1/*.JPG')
-    pattern_file_list.sort()
-    pattern_set.append(pattern_file_list)
-
-    pattern_file_list = glob.glob('../data/Nikon/2/*.JPG')
-    pattern_file_list.sort()
-    pattern_set.append(pattern_file_list)
-
-    pattern_file_list = glob.glob('../data/Nikon/3/*.JPG')
-    pattern_file_list.sort()
-    pattern_set.append(pattern_file_list)
+    for i in [1,2,3,5,6,7,8]:
+        pattern_file_list = glob.glob('../data/Nikon/' + str(i) + '/*.JPG')
+        pattern_file_list.sort()
+        pattern_set.append(pattern_file_list)
 
     out = calibrate(pattern_set)
     print(out)
