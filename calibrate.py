@@ -3,10 +3,12 @@ import os
 import matplotlib as mpl
 # mpl.use('tkagg')
 import numpy as np
+from reconstruct import reconstruct_model_simple
 from pattern_decode import decode_gray_set
 import glob
 import matplotlib.pyplot as plt
 from cv2python import *
+# from calibrate import CalibrationData
 
 shadow_threshold = 10
 corner_count_x = 8
@@ -23,7 +25,7 @@ pattern_list = []
 
 chessboard_size = cvSize(8, 8)
 corner_size = cvSize(15., 15.)
-projector_size = cvSize(1600, 1200)
+projector_size = cvSize(1280, 720)
 
 class CalibrationData(object):
     def __init__(self):
@@ -74,8 +76,6 @@ def extract_chessboard_corners(pattern_set):
             return False
         # ret, corners = cv2.findChessboardCorners(gray_image, (chessboard_size.width, chessboard_size.height), cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_NORMALIZE_IMAGE)
         ret, corners = cv2.findChessboardCorners(gray_image, (chessboard_size.width, chessboard_size.height))
-        plt.imshow(gray_image)
-        plt.show()
         if ret:
             print("find corners num is:", len(corners))
         else:
@@ -123,13 +123,22 @@ def calibrate(pattern_set):
         corners = chessboard_corners[i]
         pcorners = projector_corners[i]
 
+        pattern_image, min_max_image = decode_gray_set(pattern_set[i])
+
+        plt.imshow(pattern_image[:,:,0])
+        plt.show()
+
+        plt.imshow(pattern_image[:,:,1])
+        plt.show()
+
         # pattern_image, min_max_image = decode_gray_set(pattern_set[i])
-        if i > 2:
-            pattern_image = np.load('./Nikon_' + str(i+2)+'_pattern_image.npy')
-            min_max_image = np.load('./Nikon_' + str(i+2)+'_min_max_image.npy')
-        else:
-            pattern_image = np.load('./Nikon_' + str(i+1)+'_pattern_image.npy')
-            min_max_image = np.load('./Nikon_' + str(i+1)+'_min_max_image.npy')
+
+        # if i > 2:
+        #     pattern_image = np.load('./Nikon_' + str(i+2)+'_pattern_image.npy')
+        #     min_max_image = np.load('./Nikon_' + str(i+2)+'_min_max_image.npy')
+        # else:
+        #     pattern_image = np.load('./Nikon_' + str(i+1)+'_pattern_image.npy')
+        #     min_max_image = np.load('./Nikon_' + str(i+1)+'_min_max_image.npy')
 
         if i == 0:
             imageSize.width = pattern_image.shape[1]
@@ -177,13 +186,38 @@ def calibrate(pattern_set):
     return (cam_k, cam_kc, cam_rvecs, cam_tvecs), (proj_k, proj_kc, proj_rvecs, proj_tvecs), (R, T, E, F)
 
 if __name__ == "__main__":
+    data_path = "../data/TI/calibrate_data_11_11_2"
+    pattern_path_set = [os.path.join(data_path, elem) for elem in os.listdir(data_path) if not elem.startswith('.')]
+    pattern_path_set.sort()
 
     pattern_set = []
-    for i in [1,2,3,5,6,7,8]:
-        pattern_file_list = glob.glob('../data/Nikon/' + str(i) + '/*.JPG')
+    for pattern_folder in pattern_path_set:
+        print(pattern_folder)
+        pattern_file_list = glob.glob(pattern_folder + "/*.jpg")
         pattern_file_list.sort()
-        pattern_set.append(pattern_file_list)
-
+        count = len(pattern_file_list)
+        bit_number = 10
+        pattern_file_calibration_list = []
+        pattern_file_calibration_list.append(pattern_file_list[-2])
+        pattern_file_calibration_list.append(pattern_file_list[-1])
+        for idx in range(2*bit_number):
+            pattern_file_calibration_list.append(pattern_file_list[idx])
+        for idx in range(2*bit_number):
+            pattern_file_calibration_list.append(pattern_file_list[2*bit_number+2+2 + idx])
+        pattern_set.append(pattern_file_calibration_list)
     out = calibrate(pattern_set)
-    print(out)
+    calib = CalibrationData()
+    calib.cam_K = out[0][0]
+    calib.cam_kc = out[0][1]
+    calib.proj_K = out[1][0]
+    calib.proj_kc = out[1][1]
+    calib.R = out[2][0]
+    calib.T = out[2][1]
+    calib.is_valid = True
+
+    out = reconstruct_model_simple(calib, pattern_set[0])
+    np.save('./test_out1.npy', out)
+
+    # print(out)
+    # print(pattern_set)
 

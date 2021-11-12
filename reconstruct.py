@@ -3,7 +3,7 @@ import numpy as np
 import os
 import glob
 import matplotlib as mpl
-from calibrate import CalibrationData
+# from calibrate import CalibrationData
 # import open3d as o3d
 
 # mpl.use("tkagg")
@@ -13,37 +13,38 @@ from cv2python import *
 
 THRESHOLD_DEFAULT = 25
 MAX_DIST_DEFAULT = 100.
-projector_size = cvSize(1600, 1200)
+projector_size = cvSize(1280, 720)
+# projector_size = cvSize(1600, 1200)
 
-calib = CalibrationData()
-calib.cam_K = np.array([[4.55870035e+03, 0.00000000e+00, 1.51017862e+03],
-                        [0.00000000e+00, 4.55911080e+03, 9.88716486e+02],
-                        [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
-
-calib.cam_kc = np.array([[-1.95063253e-01],
-                         [1.93858801e+00],
-                         [-4.99197011e-04],
-                         [1.35514749e-03],
-                         [-1.55614418e+01]], dtype=np.float32)
-
-calib.proj_K = np.array([[3.90467278e+03, 0.00000000e+00, 8.02215392e+02],
-                         [0.00000000e+00, 3.90997537e+03, 6.01700509e+02],
-                         [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
-
-calib.proj_kc = np.array([[-4.78490045e-01],
-                          [3.86902030e+01],
-                          [-8.60596372e-02],
-                          [1.31578421e-02],
-                          [-6.33953261e+02]], dtype=np.float32)
-
-calib.R = np.array([[0.93488111, -0.06929929, 0.34813061],
-                    [-0.02243265, 0.9672622, 0.25278571],
-                    [-0.35425145, -0.24413408, 0.90272059]], dtype=np.float32)
-
-calib.T = np.array([[-319.41056464],
-                    [-230.99720084],
-                    [525.08697085]], dtype=np.float32)
-calib.is_valid = True
+# calib = CalibrationData()
+# calib.cam_K = np.array([[4.55870035e+03, 0.00000000e+00, 1.51017862e+03],
+#                         [0.00000000e+00, 4.55911080e+03, 9.88716486e+02],
+#                         [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
+#
+# calib.cam_kc = np.array([[-1.95063253e-01],
+#                          [1.93858801e+00],
+#                          [-4.99197011e-04],
+#                          [1.35514749e-03],
+#                          [-1.55614418e+01]], dtype=np.float32)
+#
+# calib.proj_K = np.array([[3.90467278e+03, 0.00000000e+00, 8.02215392e+02],
+#                          [0.00000000e+00, 3.90997537e+03, 6.01700509e+02],
+#                          [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
+#
+# calib.proj_kc = np.array([[-4.78490045e-01],
+#                           [3.86902030e+01],
+#                           [-8.60596372e-02],
+#                           [1.31578421e-02],
+#                           [-6.33953261e+02]], dtype=np.float32)
+#
+# calib.R = np.array([[0.93488111, -0.06929929, 0.34813061],
+#                     [-0.02243265, 0.9672622, 0.25278571],
+#                     [-0.35425145, -0.24413408, 0.90272059]], dtype=np.float32)
+#
+# calib.T = np.array([[-319.41056464],
+#                     [-230.99720084],
+#                     [525.08697085]], dtype=np.float32)
+# calib.is_valid = True
 
 
 def triangulate_stereo(K1, kc1, K2, kc2, Rt, T, p1, p2, distance):
@@ -108,10 +109,10 @@ def approximate_ray_intersection(v1, q1, v2, q2, distance, out_lambda1=0, out_la
     return p, distance, out_lambda1, out_lambda2
 
 
-def reconstruct_model_simple(pattern_list):
-    # pattern_image, min_max_image = decode_gray_set(pattern_list)
-    pattern_image = np.load('./Nikon_test1_pattern_image.npy')
-    min_max_image = np.load('./Nikon_test1_min_max_image.npy')
+def reconstruct_model_simple(calib, pattern_list):
+    pattern_image, min_max_image = decode_gray_set(pattern_list)
+    # pattern_image = np.load('./Nikon_test1_pattern_image.npy')
+    # min_max_image = np.load('./Nikon_test1_min_max_image.npy')
     color_image = cv2.imread(pattern_list[0])
     threshold = THRESHOLD_DEFAULT
     max_dist = MAX_DIST_DEFAULT
@@ -161,6 +162,7 @@ def reconstruct_model_simple(pattern_list):
 
 if __name__ == '__main__':
     # pattern_file_list = glob.glob('../cartman/2013-May-14_20.41.56.117/*.png')
+    from calibrate import CalibrationData
     pattern_file_list = glob.glob('../data/Nikon/test1/*.JPG')
     pattern_file_list.sort()
     count = len(pattern_file_list)
