@@ -139,3 +139,67 @@ array([[-3.65771253e+01, -1.88604780e+03, -5.38646828e+02],
 array([[ 3.42962639e-07,  1.76804481e-05,  5.83351645e-03],
        [-2.06929833e-05,  2.19177579e-06, -3.59252075e-03],
        [-3.51114632e-03,  5.31068267e-03,  1.00000000e+00]])))
+
+
+### projector calibration
+
+#### 数据及结构体定义
+> board 标定板
+> pattern 光机投射棋盘格
+
+##### board
+- board_size: cols=12, rows=9 格子数量
+- board_feature_size: cols=11, rows=8 交点数目
+- board_distance_world: 20mm 格子边长
+
+##### pattern
+- pattern_size: cols=10, rows=8 格子数量
+- pattern_feature_size: cols=9, rows=7 交点数目
+- pattern_distance_pixel: 50pixels 格子边长，像素坐标
+
+##### class calibration
+- camera
+  - resolution 
+  - K, kc
+- projector
+  - resolution 
+  - K, kc
+- stereo
+  - R, t
+
+
+#### 每个pose 三幅图像数据
+
+- projector all on 全1码
+- projector all off 全0码
+- 棋盘格和投影棋盘个混合图像
+
+#### STEP 1
+
+- 利用projector_all_on 提取board feature location 在图像中坐标
+- 在混合图像中剥离出投影棋盘格， 并提取 pattern feature location 在图像中坐标
+
+#### STEP 2
+
+- 生成board 的board_object_points_xyz世界坐标
+- 生成pattern 在projector 中的图像坐标
+
+#### STEP 3
+
+- camera calibration 相机标定，利用board feature location 与 board_object_points_xyz
+- 在每个pose中，将单应性矩阵保存
+
+#### STEP4
+
+- 利用每个pose的单应性矩阵及pattern_feature_location获取pattern_object_points_xyz世界坐标
+
+#### STEP 5
+
+- 利用pattern_object_points_xyz和pattern_feature_location对projector进行标定
+
+#### STEP 6
+
+- stereocamera calibration
+
+
+

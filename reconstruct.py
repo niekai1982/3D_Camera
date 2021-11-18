@@ -4,14 +4,15 @@ import os
 import glob
 import matplotlib as mpl
 # from calibrate import CalibrationData
-# import open3d as o3d
+import open3d as o3d
+import numba as nb
 
 # mpl.use("tkagg")
 import matplotlib.pyplot as plt
 from pattern_decode import decode_gray_set
 from cv2python import *
 
-THRESHOLD_DEFAULT = 25
+THRESHOLD_DEFAULT = 12
 MAX_DIST_DEFAULT = 100.
 projector_size = cvSize(1280, 720)
 # projector_size = cvSize(1600, 1200)
@@ -109,21 +110,16 @@ def approximate_ray_intersection(v1, q1, v2, q2, distance, out_lambda1=0, out_la
     return p, distance, out_lambda1, out_lambda2
 
 
-def reconstruct_model_simple(calib, pattern_list):
-    pattern_image, min_max_image = decode_gray_set(pattern_list)
-    # pattern_image = np.load('./Nikon_test1_pattern_image.npy')
-    # min_max_image = np.load('./Nikon_test1_min_max_image.npy')
-    color_image = cv2.imread(pattern_list[0])
+def reconstruct_point(pattern_image, min_max_image, cam_K, cam_kc, proj_K, proj_kc, R, T):
     threshold = THRESHOLD_DEFAULT
     max_dist = MAX_DIST_DEFAULT
 
     plane_dist = 100.0
-    scale_factor = 1
     out_cols = int(pattern_image.shape[1])
     out_rows = int(pattern_image.shape[0])
-    pointcloud = np.empty(shape=(out_rows, out_cols, 3))
+    pointcloud = np.zeros(shape=(out_rows, out_cols, 3), dtype=np.float32)
 
-    Rt = calib.R.T
+    Rt = R.T
 
     good = 0
     bad = 0
@@ -142,37 +138,50 @@ def reconstruct_model_simple(calib, pattern_list):
             col = pattern[0]
             row = pattern[1]
 
-            if projector_size.width <= int(col) or projector_size.height <= int(row):
-                continue
+            # if projector_size.width <= int(col) or projector_size.height <= int(row):
+            if 1280 <= int(col) or 720 <= int(row):
+                    continue
 
             p1 = (w, h)
             p2 = (col, row)
 
-            p, distance = triangulate_stereo(calib.cam_K, calib.cam_kc, calib.proj_K, calib.proj_kc, Rt, calib.T, p1,
-                                             p2, distance)
+            p, distance = triangulate_stereo(cam_K, cam_kc, proj_K, proj_kc, Rt, T, p1, p2, distance)
 
-            if distance < max_dist:
+            if distance < 2 * max_dist:
                 d = plane_dist + 1
                 if d > plane_dist:
                     pointcloud[h, w][0] = p[0][0]
                     pointcloud[h, w][1] = p[1][0]
                     pointcloud[h, w][2] = p[2][0]
+    return  pointcloud
+
+
+def reconstruct_model_simple(calib, pattern_list):
+    pattern_image, min_max_image = decode_gray_set(pattern_list)
+    # pattern_image = np.load('./Nikon_test1_pattern_image.npy')
+    # min_max_image = np.load('./Nikon_test1_min_max_image.npy')
+    color_image = cv2.imread(pattern_list[0])
+    pointcloud = reconstruct_point(pattern_image, min_max_image, calib.cam_K, calib.cam_kc, calib.proj_K, calib.proj_kc, calib.R, calib.T)
     return pointcloud
 
 
 if __name__ == '__main__':
     # pattern_file_list = glob.glob('../cartman/2013-May-14_20.41.56.117/*.png')
     from calibrate import CalibrationData
-    pattern_file_list = glob.glob('../data/Nikon/test1/*.JPG')
-    pattern_file_list.sort()
-    count = len(pattern_file_list)
-    out = reconstruct_model_simple(pattern_file_list)
-    np.save('./test_out.npy', out)
-    # xyz = np.zeros((out.shape[0] * out.shape[1], 3), dtype=np.float32)
+    # pattern_file_list = glob.glob('../data/Nikon/test1/*.JPG')
+    # pattern_file_list.sort()
+    # count = len(pattern_file_list)
+    # out = reconstruct_model_simple(pattern_file_list)
+    # np.save('./test_out.npy', out)
+    out = np.load("./test_bearing_2.npy")
+    out[out[:,:,2]>1000] = 0
+    out[out[:,:,2]<100] = 0
+    # out[out<1000] = 0
+    xyz = np.zeros((out.shape[0] * out.shape[1], 3), dtype=np.float32)
 
-    # xyz[:, 0] = out[:, :, 1].flatten()
-    # xyz[:, 1] = out[:, :, 0].flatten()
-    # xyz[:, 2] = out[:, :, 2].flatten()
-    # pcd = o3d.geometry.PointCloud()
-    # pcd.points = o3d.utility.Vector3dVector(xyz)
-    # o3d.io.write_point_cloud("./sync.ply", pcd)
+    xyz[:, 0] = out[:, :, 1].flatten()
+    xyz[:, 1] = out[:, :, 0].flatten()
+    xyz[:, 2] = out[:, :, 2].flatten()
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(xyz)
+    o3d.io.write_point_cloud("./test_bearing_2.ply", pcd)
