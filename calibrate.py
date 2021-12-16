@@ -176,8 +176,7 @@ def calibrate_camera(boards_features, boards_points_xy, boards_points_xyz, calib
 
 # @nb.jit(nopython=True)
 def RemovePrinted_AddProjectBoard(projector_all_on, projector_all_off, board_image_print_and_project):
-    albedo = np.empty_like(projector_all_on)
-    out = np.empty_like(projector_all_on)
+    # out = np.empty_like(projector_all_on)
     all_on = projector_all_on.copy()
     all_off = projector_all_off.copy()
     combo = board_image_print_and_project.copy()
@@ -198,8 +197,8 @@ def RemovePrinted_AddProjectBoard(projector_all_on, projector_all_off, board_ima
     #         else:
     #             out[yRow, xCol] = 0
     # return out
-    albedo = (all_on + all_off) / 2
-    out = np.zeros_like(out)
+    albedo = (all_on.astype(np.int32) + all_off.astype(np.int32)) / 2
+    out = np.zeros_like(albedo, dtype=np.uint8)
     out[combo > albedo] = 255
     # out[np.abs(combo - albedo) < 1] = 255
     return out
@@ -260,7 +259,10 @@ def calibrate(pattern_set):
         ret_b, board_feature_location = extract_chessboard_corners(projector_all_on, board.feature_size)
         ret_p, pattern_feature_location = extract_chessboard_corners(pattern_image, pattern.feature_size)
 
-        if ret_b and ret_b:
+        # plt.imshow(pattern_image)
+        # plt.show()
+
+        if ret_b and ret_p:
             boards_features.append(np.float32(board_feature_location.reshape(-1, 2)))
             boards_points_xy.append(np.float32(board.object_points_xy))
             boards_points_xyz.append(np.float32(board.object_points_xyz))
@@ -283,10 +285,13 @@ def calibrate(pattern_set):
 
 if __name__ == "__main__":
     pattern_set = glob.glob('../data/TI/cd_11_6_1/*.jpg')
+    # pattern_set = glob.glob('../data/TI/2021_11_30_calibration_image/calibration_image_1130/*.jpg')
     pattern_set.sort()
+    print(pattern_set)
     calib_data = calibrate(pattern_set)
 
-    data_path = "../data/TI/savedimages_bearing2"
+    data_path = "../data/TI/11-18-3"
+    # data_path = '../data/TI/2021_11_30_calibration_image/Z_relative_0'
     # pattern_path_set = [os.path.join(data_path, elem) for elem in os.listdir(data_path) if not elem.startswith('.')]
     # pattern_path_set.sort()
 
@@ -303,7 +308,8 @@ if __name__ == "__main__":
     for idx in range(2*bit_number):
         pattern_file_calibration_list.append(pattern_file_list[idx])
     for idx in range(2*bit_number):
-        pattern_file_calibration_list.append(pattern_file_list[2*bit_number+2+2 + idx])
+        # pattern_file_calibration_list.append(pattern_file_list[2*bit_number+2+2 + idx])
+        pattern_file_calibration_list.append(pattern_file_list[2*bit_number+2 + idx])
     pattern_set.append(pattern_file_calibration_list)
     # calib = CalibrationData()
     # calib.cam_K = out[0][0]
@@ -315,7 +321,7 @@ if __name__ == "__main__":
     # calib.is_valid = True
 
     out = reconstruct_model_simple(calib_data, pattern_set[0])
-    np.save('./test_bearing_3.npy', out)
+    np.save('./test_pattern_11_30.npy', out)
 
     # out[out[:,:,2]>1000] = 0
     # out[out[:,:,2]<100] = 0
@@ -330,7 +336,7 @@ if __name__ == "__main__":
     xyz[:, 2] = out[:, :, 2].flatten()
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(xyz)
-    o3d.io.write_point_cloud("./test_bearing_3.ply", pcd)
+    o3d.io.write_point_cloud("./test_pattern_11_30.ply", pcd)
 
     # print(out)
     # print(pattern_set)

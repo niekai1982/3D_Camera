@@ -153,6 +153,7 @@ def convert_pattern_g2b(pattern_image, projector_size_width, projector_size_heig
 def decode_pattern(pattern_image_list, flag, direct_light, m):
     binary = (flag & GrayPatternDecode) != GrayPatternDecode
     robust = (flag & RobustDecode) == RobustDecode
+    robust = False
 
     # inline function
     @nb.jit(nopython=True)
@@ -302,6 +303,9 @@ def decode_gray_set(pattern_image_list):
     pattern_image, min_max_image = decode_pattern(pattern_image_list, RobustDecode | GrayPatternDecode, direct_light,
                                                   DEFAULT_M)
     return pattern_image, min_max_image
+
+def decode_pattern_ti(pattern_image_list):
+    pass
 
 
 def decode():

@@ -1,4 +1,5 @@
 import cv2
+import time
 import numpy as np
 import os
 import glob
@@ -15,6 +16,8 @@ from cv2python import *
 THRESHOLD_DEFAULT = 12
 MAX_DIST_DEFAULT = 100.
 projector_size = cvSize(1280, 720)
+
+
 # projector_size = cvSize(1600, 1200)
 
 # calib = CalibrationData()
@@ -140,7 +143,7 @@ def reconstruct_point(pattern_image, min_max_image, cam_K, cam_kc, proj_K, proj_
 
             # if projector_size.width <= int(col) or projector_size.height <= int(row):
             if 1280 <= int(col) or 720 <= int(row):
-                    continue
+                continue
 
             p1 = (w, h)
             p2 = (col, row)
@@ -153,7 +156,7 @@ def reconstruct_point(pattern_image, min_max_image, cam_K, cam_kc, proj_K, proj_
                     pointcloud[h, w][0] = p[0][0]
                     pointcloud[h, w][1] = p[1][0]
                     pointcloud[h, w][2] = p[2][0]
-    return  pointcloud
+    return pointcloud
 
 
 def reconstruct_model_simple(calib, pattern_list):
@@ -161,21 +164,23 @@ def reconstruct_model_simple(calib, pattern_list):
     # pattern_image = np.load('./Nikon_test1_pattern_image.npy')
     # min_max_image = np.load('./Nikon_test1_min_max_image.npy')
     color_image = cv2.imread(pattern_list[0])
-    pointcloud = reconstruct_point(pattern_image, min_max_image, calib.cam_K, calib.cam_kc, calib.proj_K, calib.proj_kc, calib.R, calib.T)
+    pointcloud = reconstruct_point(pattern_image, min_max_image, calib.cam_K, calib.cam_kc, calib.proj_K, calib.proj_kc,
+                                   calib.R, calib.T)
     return pointcloud
 
 
 if __name__ == '__main__':
     # pattern_file_list = glob.glob('../cartman/2013-May-14_20.41.56.117/*.png')
     from calibrate import CalibrationData
+
     # pattern_file_list = glob.glob('../data/Nikon/test1/*.JPG')
     # pattern_file_list.sort()
     # count = len(pattern_file_list)
     # out = reconstruct_model_simple(pattern_file_list)
     # np.save('./test_out.npy', out)
     out = np.load("./test_bearing_2.npy")
-    out[out[:,:,2]>1000] = 0
-    out[out[:,:,2]<100] = 0
+    out[out[:, :, 2] > 1000] = 0
+    out[out[:, :, 2] < 100] = 0
     # out[out<1000] = 0
     xyz = np.zeros((out.shape[0] * out.shape[1], 3), dtype=np.float32)
 
