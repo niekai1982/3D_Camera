@@ -25,15 +25,25 @@ calib.cam_kc = np.array([[-1.95063253e-01],
                          [1.35514749e-03],
                          [-1.55614418e+01]], dtype=np.float32)
 
-calib.proj_K = np.array([[3.90467278e+03, 0.00000000e+00, 8.02215392e+02],
-                         [0.00000000e+00, 3.90997537e+03, 6.01700509e+02],
-                         [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
+# calib.proj_K = np.array([[3.90467278e+03, 0.00000000e+00, 8.02215392e+02],
+#                          [0.00000000e+00, 3.90997537e+03, 6.01700509e+02],
+#                          [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]], dtype=np.float32)
 
-calib.proj_kc = np.array([[-4.78490045e-01],
-                          [3.86902030e+01],
-                          [-8.60596372e-02],
-                          [1.31578421e-02],
-                          [-6.33953261e+02]], dtype=np.float32)
+calib.proj_K = np.array([[1.58826149e+03, 0.00000000e+00, 6.84052652e+02],
+                         [0.00000000e+00, 1.58393195e+03,6.57017497e+02],
+                         [0.00000000e+00,0.00000000e+00,1.00000000e+00]], dtype=np.float32)
+
+calib.proj_kc = np.array([[ 8.75422135e-02],
+                          [ 4.85587040e-03],
+                          [-1.33298017e-02],
+                          [-2.03717049e-04],
+                          [-1.92013271e+00]], dtype=np.float32)
+
+# calib.proj_kc = np.array([[-4.78490045e-01],
+#                           [3.86902030e+01],
+#                           [-8.60596372e-02],
+#                           [1.31578421e-02],
+#                           [-6.33953261e+02]], dtype=np.float32)
 
 calib.R = np.array([[0.93488111, -0.06929929, 0.34813061],
                     [-0.02243265, 0.9672622, 0.25278571],
@@ -83,7 +93,7 @@ class Geometry(object):
         total_columns = columns * over_sample_colums
         total_rows = rows * over_sample_rows
 
-        distortion[:] = 0
+        distortion[1:] = 0
         ray_count = total_columns * total_rows
         points = np.mgrid[:total_rows, :total_columns].astype(np.float64)
         # undistorted_points = np.mgrid[:total_rows, :total_columns].astype(np.float64)
@@ -138,11 +148,11 @@ class Geometry(object):
             self.origin_.plane_columns.append(plane_eq)
         self.origin_set_ = True
 
-    def AddView(self, viewport_calib):
+    def AddView(self):
         viewport_tmp = ViewPoint()
 
-        origin_intrinsic = self.origin_calib_.proj_K
-        origin_distortion = self.origin_calib_.proj_kc
+        # origin_intrinsic = self.origin_calib_.proj_K
+        # origin_distortion = self.origin_calib_.proj_kc
 
         viewport_intrinsic = self.origin_calib_.cam_K
         viewport_distortion = self.origin_calib_.cam_kc
@@ -157,7 +167,7 @@ class Geometry(object):
         rows = camera_size.rows
         columns = camera_size.cols
 
-        ray_count = columns * rows
+        # ray_count = columns * rows
 
         original_rays = np.mgrid[:rows, :columns].astype(np.float64)
         original_rays.shape = -1, 1, 2
@@ -234,4 +244,7 @@ if __name__ == '__main__':
     # out = geometry.GenerateOpticalPoints(projector_size.cols, projector_size.rows, compress_x=1.0, compress_y=1.0,
     #                                      shift_rows=0.0, shift_colums=0.0, over_sample_colums=1,
     #                                      over_sample_rows=1, intrinsics=calib.proj_K, distortion=calib.proj_kc)
-    out = geometry.SetOriginView(calib)
+    geometry.SetOriginView(calib)
+    geometry.AddView()
+
+

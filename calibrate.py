@@ -72,7 +72,6 @@ class Pattern(object):
         self.feature_location_in_projector = np.array(self.feature_location_in_projector)
         self.feature_location_in_projector.shape = -1, 2
 
-
 class CalibrationData(object):
     def __init__(self, camera_resolution, projector_resolution):
         self.cam_K = np.empty(shape=(3, 3), dtype=np.float32)
@@ -91,6 +90,12 @@ class CalibrationData(object):
         self.projector_resolution = cvSize(w=projector_resolution[0], h=projector_resolution[1])
         self.pose_num = 0
         self.homography = []
+
+
+    def camera_data(self):
+
+        pass
+
 
     def load_calibration(self, filename):
         pass
